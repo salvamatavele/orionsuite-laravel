@@ -1,0 +1,69 @@
+{
+    "name": "salvamatavele/orionsuite-laravel",
+    "description": "SDK oficial para o ecossistema OrionCodeTech em Moçambique: Pagar.co.mz (M-Pesa e e-Mola), Notifica.co.mz (SMS, WhatsApp, Email, Push) e Orion OCR (Verificação de BI e Identidade KYC)",
+    "keywords": [
+        "pagar",
+        "notifica",
+        "ocr",
+        "kyc",
+        "orionsuite",
+        "orioncodetech",
+        "mpesa",
+        "emola",
+        "mkesh",
+        "payments",
+        "sms",
+        "whatsapp",
+        "identity",
+        "mozambique",
+        "laravel"
+    ],
+    "homepage": "https://github.com/salvamatavele/orionsuite-laravel",
+    "support": {
+        "issues": "https://github.com/salvamatavele/orionsuite-laravel/issues",
+        "source": "https://github.com/salvamatavele/orionsuite-laravel"
+    },
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Salva Matavele",
+            "email": "salva@dryacademic.mz"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/http": "^10.0|^11.0|^12.0|^13.0"
+    },
+    "require-dev": {
+        "pestphp/pest": "^2.0|^3.0|^4.0",
+        "mockery/mockery": "^1.6",
+        "orchestra/testbench": "^8.0|^9.0|^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "OrionSuite\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OrionSuite\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "OrionSuite\\Laravel\\OrionSuiteServiceProvider"
+            ],
+            "aliases": {
+                "OrionSuite": "OrionSuite\\Laravel\\Facades\\OrionSuite",
+                "Pagar": "OrionSuite\\Laravel\\Facades\\Pagar",
+                "Notifica": "OrionSuite\\Laravel\\Facades\\Notifica",
+                "OrionKyc": "OrionSuite\\Laravel\\Facades\\OrionKyc"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
