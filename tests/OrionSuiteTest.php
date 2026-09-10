@@ -3,12 +3,12 @@
 namespace OrionSuite\Tests;
 
 use Illuminate\Support\Facades\Http;
-use Tests\TestCase;
 use OrionSuite\Identity\OrionKycClient;
 use OrionSuite\Notifications\NotificaClient;
 use OrionSuite\OrionSuiteManager;
 use OrionSuite\Payments\PagarClient;
 use OrionSuite\Support\PhoneNormalizer;
+use Tests\TestCase;
 
 class OrionSuiteTest extends TestCase
 {
@@ -145,5 +145,126 @@ class OrionSuiteTest extends TestCase
         $this->assertFalse($pagar->isEnabled());
         $this->assertFalse($notifica->isEnabled());
         $this->assertFalse($kyc->isEnabled());
+    }
+
+    public function test_notifica_whatsapp_endpoints_and_custom_instance_uuid(): void
+    {
+        Http::fake([
+            'https://api.notifica.co.mz/api/v1/whatsapp/send-text' => Http::response([
+                'success' => true,
+                'data' => ['id' => 'wa_1', 'status' => 'pending'],
+            ], 200),
+            'https://api.notifica.co.mz/api/v1/whatsapp/send-media' => Http::response([
+                'success' => true,
+                'data' => ['id' => 'wa_2', 'status' => 'pending'],
+            ], 200),
+            'https://api.notifica.co.mz/api/v1/whatsapp/send-template' => Http::response([
+                'success' => true,
+                'data' => ['id' => 'wa_3', 'status' => 'pending'],
+            ], 200),
+        ]);
+
+        $notifica = new NotificaClient(
+            apiToken: 'token',
+            defaultWhatsAppInstanceUuid: 'default-uuid-123'
+        );
+
+        $textRes = $notifica->sendWhatsAppText('841234567', 'Olá via WhatsApp!');
+        $this->assertTrue($textRes['success']);
+
+        // Custom instance UUID override
+        $customRes = $notifica->sendWhatsAppText('841234567', 'Mensagem', 'custom-uuid-456');
+        $this->assertTrue($customRes['success']);
+
+        // Media
+        $mediaRes = $notifica->sendWhatsAppMedia('841234567', 'https://exemplo.com/fatura.pdf', 'document', 'Factura de Propinas');
+        $this->assertTrue($mediaRes['success']);
+
+        // Template
+        $tplRes = $notifica->sendWhatsAppTemplate('841234567', 'confirmacao_pagamento', ['Estudante 1', '1000 MZN']);
+        $this->assertTrue($tplRes['success']);
+    }
+
+    public function test_notifica_push_notification_send(): void
+    {
+        Http::fake([
+            'https://api.notifica.co.mz/api/v1/push/send' => Http::response([
+                'success' => true,
+                'data' => ['id' => 'push_99', 'delivered' => true],
+            ], 200),
+        ]);
+
+        $notifica = new NotificaClient('token');
+
+        // Testar validação: erro se token e user_id estiverem vazios
+        $valErr = $notifica->sendPush('Alerta', 'Mensagem sem destinatário');
+        $this->assertFalse($valErr['success']);
+
+        // Envio com device_token
+        $res = $notifica->sendPush(
+            title: 'Nova Nota Lançada',
+            body: 'A sua nota de Matemática foi publicada.',
+            deviceToken: 'fcm-token-xyz',
+            data: ['route' => '/estudante/notas'],
+            priority: 'high'
+        );
+
+        $this->assertTrue($res['success']);
+        $this->assertEquals('push_99', $res['data']['id']);
+    }
+
+    public function test_notifica_senders_and_email_senders_listing(): void
+    {
+        Http::fake([
+            'https://api.notifica.co.mz/api/v1/senders' => Http::response([
+                'success' => true,
+                'data' => [
+                    'sms' => [['sender_id' => 'DRYACADEMIC']],
+                    'whatsapp' => [['instance_uuid' => 'wa-inst-uuid-1']],
+                ],
+            ], 200),
+            'https://api.notifica.co.mz/api/v1/email/senders' => Http::response([
+                'success' => true,
+                'data' => [
+                    ['email' => 'finance@universidade.ac.mz'],
+                ],
+            ], 200),
+        ]);
+
+        $notifica = new NotificaClient('token');
+
+        $senders = $notifica->listSenders();
+        $this->assertTrue($senders['success']);
+        $this->assertEquals('DRYACADEMIC', $senders['data']['sms'][0]['sender_id']);
+
+        $emailSenders = $notifica->listEmailSenders();
+        $this->assertTrue($emailSenders['success']);
+        $this->assertEquals('finance@universidade.ac.mz', $emailSenders['data'][0]['email']);
+    }
+
+    public function test_pagar_wallet_topup(): void
+    {
+        Http::fake([
+            'https://api.pagar.co.mz/api/v1/wallet/topups' => Http::response([
+                'topup' => [
+                    'id' => 'top_123',
+                    'status' => 'PENDING',
+                    'reference' => 'TOPUP-001',
+                    'amountMzn' => 5000,
+                ],
+            ], 202),
+        ]);
+
+        $pagar = new PagarClient(apiKey: 'key', signingSecret: 'secret');
+
+        $result = $pagar->createTopup([
+            'reference' => 'TOPUP-001',
+            'amountMzn' => 5000,
+            'phone' => '841234567',
+            'method' => 'MPESA',
+        ]);
+
+        $this->assertEquals('top_123', $result['topup']['id']);
+        $this->assertEquals('PENDING', $result['topup']['status']);
     }
 }

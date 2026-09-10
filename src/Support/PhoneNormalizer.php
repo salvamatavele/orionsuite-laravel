@@ -33,6 +33,7 @@ class PhoneNormalizer
         }
 
         $digits = preg_replace('/\D+/', '', $phone);
+
         return $digits;
     }
 

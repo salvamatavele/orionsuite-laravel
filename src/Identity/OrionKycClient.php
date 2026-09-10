@@ -26,10 +26,27 @@ class OrionKycClient
         );
     }
 
-    public function isEnabled(): bool { return $this->enabled; }
-    public function setEnabled(bool $enabled): self { $this->enabled = $enabled; return $this; }
-    public function enable(): self { return $this->setEnabled(true); }
-    public function disable(): self { return $this->setEnabled(false); }
+    public function isEnabled(): bool
+    {
+        return $this->enabled;
+    }
+
+    public function setEnabled(bool $enabled): self
+    {
+        $this->enabled = $enabled;
+
+        return $this;
+    }
+
+    public function enable(): self
+    {
+        return $this->setEnabled(true);
+    }
+
+    public function disable(): self
+    {
+        return $this->setEnabled(false);
+    }
 
     /**
      * Gera token sandbox gratuito para testes
@@ -76,6 +93,7 @@ class OrionKycClient
     ): array {
         if (! $this->isEnabled()) {
             Log::info('Orion KYC skipped: service is disabled.', ['external_reference' => $externalReference]);
+
             return [
                 'status' => 'disabled',
                 'decision' => 'pending_review',

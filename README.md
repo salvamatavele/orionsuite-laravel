@@ -49,6 +49,8 @@ NOTIFICA_ENABLED=true
 NOTIFICA_API_BASE_URL="https://api.notifica.co.mz/api/v1"
 NOTIFICA_API_TOKEN="seu_token_notifica"
 NOTIFICA_DEFAULT_SMS_SENDER="ORIONCODE"
+NOTIFICA_DEFAULT_WHATSAPP_INSTANCE_UUID="uuid-da-instancia-whatsapp"
+NOTIFICA_DEFAULT_EMAIL_FROM="notificacoes@suaempresa.co.mz"
 
 # -------------------------------------------------------------
 # Orion OCR / Identity KYC
@@ -63,7 +65,7 @@ ORION_KYC_ENVIRONMENT="production" # ou "test"
 
 ## 🚀 Guia de Utilização
 
-### 1. Pagamentos C2B (M-Pesa e e-Mola) via Facade `Pagar`
+### 1. Pagamentos C2B, Top-ups e Payouts (Pagar.co.mz)
 
 A operadora móvel é detectada automaticamente pelo número do telemóvel:
 
@@ -94,6 +96,16 @@ $max = Pagar::getMaxAmount(); // 40000.0
 Pagar::setMaxAmount(60000.0);
 ```
 
+#### Recarga de Carteira (Wallet Top-up):
+```php
+$topup = Pagar::createTopup([
+    'amount' => 1500,
+    'payment_method' => 'MPESA',
+    'customer_phone' => '841234567',
+    'reference' => 'RECARGA-001',
+]);
+```
+
 #### Payouts B2C (Envio de fundos):
 ```php
 $payout = Pagar::createPayout([
@@ -107,29 +119,61 @@ $payout = Pagar::createPayout([
 
 ---
 
-### 2. Notificações Multicanal via Facade `Notifica`
+### 2. Notificações Multicanal (Notifica.co.mz)
 
 ```php
 use OrionSuite\Laravel\Facades\Notifica;
 
-// Envio de SMS
+// 1. Envio de SMS (com remetente dinâmico ou padrão)
 Notifica::sendSms(
     to: '841234567',
     message: 'Seu pagamento foi confirmado com sucesso!',
-    sender: 'DRYACADEMIC'
+    sender: 'DRYACADEMIC' // opcional: usa default_sms_sender se omitido
 );
 
-// Envio de WhatsApp
-Notifica::sendWhatsApp(
+// 2. WhatsApp Oficial (Texto, Mídia ou Template)
+// Texto:
+Notifica::sendWhatsAppText(
     to: '841234567',
-    message: 'Olá! Segue o link de acesso ao seu curso: https://...'
+    message: 'Olá! Seu recibo digital está disponível.',
+    instanceUuid: 'uuid-opcional' // usa padrão se omitido
 );
 
-// Envio de Email
+// Mídia (PDF, Imagem, etc):
+Notifica::sendWhatsAppMedia(
+    to: '841234567',
+    mediaUrl: 'https://suaempresa.co.mz/recibos/123.pdf',
+    mediaType: 'document', // 'image' | 'document' | 'video' | 'audio'
+    caption: 'Segue o seu recibo'
+);
+
+// Template aprovado:
+Notifica::sendWhatsAppTemplate(
+    to: '841234567',
+    templateName: 'recibo_pagamento',
+    params: ['Salvado', '2.500 MZN']
+);
+
+// 3. Push Notifications (Preview Oficial da Notifica)
+Notifica::sendPush([
+    'user_id' => 'user_98765', // ou 'device_token' => 'fcm_token_...'
+    'title' => 'Matrícula Ativa',
+    'body' => 'Seu acesso ao portal acadêmico foi desbloqueado.',
+    'image_url' => 'https://suaempresa.co.mz/banner.png',
+    'data' => ['screen' => 'profile', 'id' => 123],
+    'priority' => 'high',
+]);
+
+// 4. Descoberta de Remetentes e Instâncias Aprovadas
+$senders = Notifica::listSenders(); // Lista remetentes SMS e instâncias WhatsApp
+$emailSenders = Notifica::listEmailSenders(); // Lista domínios de email aprovados
+
+// 5. Envio de Email com Layout Notifica
 Notifica::sendEmail(
     to: 'estudante@exemplo.ac.mz',
     subject: 'Confirmação de Matrícula',
-    htmlContent: '<h1>Matrícula Confirmada</h1>'
+    body: 'Sua matrícula foi realizada com sucesso.',
+    from: 'admissoes@universidade.ac.mz' // opcional
 );
 ```
 

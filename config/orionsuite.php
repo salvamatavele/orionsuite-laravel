@@ -12,7 +12,7 @@ return [
         'api_key' => env('PAGAR_API_KEY'),
         'signing_secret' => env('PAGAR_SIGNING_SECRET'),
         'webhook_secret' => env('PAGAR_WEBHOOK_SECRET'),
-        
+
         // Limites dinâmicos (em MZN) - ajustáveis conforme políticas da Pagar
         'min_amount' => (float) env('PAGAR_MIN_AMOUNT', 20.0),
         'max_amount' => (float) env('PAGAR_MAX_AMOUNT', 40000.0),
@@ -35,6 +35,8 @@ return [
         'base_url' => env('NOTIFICA_API_BASE_URL', 'https://api.notifica.co.mz/api/v1'),
         'api_token' => env('NOTIFICA_API_TOKEN'),
         'default_sms_sender' => env('NOTIFICA_DEFAULT_SMS_SENDER', 'ORIONCODE'),
+        'default_whatsapp_instance_uuid' => env('NOTIFICA_DEFAULT_WHATSAPP_INSTANCE_UUID'),
+        'default_email_from' => env('NOTIFICA_DEFAULT_EMAIL_FROM', 'noreply@notifica.co.mz'),
         'disabled_message' => env('NOTIFICA_DISABLED_MESSAGE', 'O serviço de notificações encontra-se temporariamente indisponível.'),
     ],
 
