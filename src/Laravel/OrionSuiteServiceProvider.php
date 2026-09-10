@@ -43,6 +43,10 @@ class OrionSuiteServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../../config/orionsuite.php' => config_path('orionsuite.php'),
             ], 'orionsuite-config');
+
+            $this->publishes([
+                __DIR__.'/../../resources/js/components/PagarModal.tsx' => resource_path('js/components/PagarModal.tsx'),
+            ], 'orionsuite-react');
         }
 
         $this->registerRoutes();

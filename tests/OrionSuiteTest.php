@@ -267,4 +267,14 @@ class OrionSuiteTest extends TestCase
         $this->assertEquals('top_123', $result['topup']['id']);
         $this->assertEquals('PENDING', $result['topup']['status']);
     }
+
+    public function test_service_provider_publishes_react_component(): void
+    {
+        $componentPath = __DIR__.'/../resources/js/components/PagarModal.tsx';
+        $this->assertFileExists($componentPath);
+        $content = file_get_contents($componentPath);
+        $this->assertStringContainsString('PagarModalProps', $content);
+        $this->assertStringContainsString('Vodacom M-Pesa', $content);
+        $this->assertStringContainsString('Movitel e-Mola', $content);
+    }
 }

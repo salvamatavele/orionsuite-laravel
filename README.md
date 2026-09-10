@@ -19,9 +19,12 @@ SDK oficial para o ecossistema tecnológico **[OrionCodeTech](https://orioncodet
 composer require salvamatavele/orionsuite-laravel
 ```
 
-Publique o arquivo de configuração:
 ```bash
+# Publicar arquivo de configuração
 php artisan vendor:publish --tag=orionsuite-config
+
+# Publicar componente React de Pagamento (<PagarModal />)
+php artisan vendor:publish --tag=orionsuite-react
 ```
 
 ---
@@ -213,6 +216,48 @@ OrionSuite::disableAll();
 
 // Reativar
 OrionSuite::enableAll();
+```
+
+---
+
+### 5. Componente React Interativo (`<PagarModal />`)
+
+Após executar `php artisan vendor:publish --tag=orionsuite-react`, o componente será copiado para `resources/js/components/PagarModal.tsx`. Pode utilizá-lo diretamente nas suas páginas Inertia/React:
+
+```tsx
+import React, { useState } from 'react';
+import PagarModal from '@/components/PagarModal';
+
+export default function CheckoutPage({ propina }) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <div>
+            <button
+                onClick={() => setOpen(true)}
+                className="px-5 py-2.5 bg-amber-400 font-bold rounded-xl shadow hover:bg-amber-500"
+            >
+                Pagar com M-Pesa / e-Mola
+            </button>
+
+            <PagarModal
+                open={open}
+                onOpenChange={setOpen}
+                amount={propina.valor}
+                reference={propina.codigo}
+                title="Pagamento de Mensalidade"
+                endpoints={{
+                    paymentUrl: '/api/pagamentos/pagar', // Rota POST da sua aplicação
+                    statusUrl: '/api/pagamentos/status', // Opcional: Rota GET para polling
+                }}
+                onSuccess={(data) => {
+                    console.log('Pago com sucesso!', data);
+                    // Atualizar UI ou redirecionar
+                }}
+            />
+        </div>
+    );
+}
 ```
 
 ---
