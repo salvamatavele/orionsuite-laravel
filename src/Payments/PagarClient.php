@@ -175,16 +175,19 @@ class PagarClient
         $phone = PhoneNormalizer::normalize($data['payerPhone'] ?? $data['phone'] ?? '');
         $method = strtoupper((string) ($data['method'] ?? PhoneNormalizer::detectPaymentMethod($phone) ?? 'MPESA'));
 
-        $path = '/payments';
+        $title = (string) ($data['title'] ?? 'Pagamento');
+        $description = ! empty($data['description']) ? (string) $data['description'] : $title;
+
         $body = [
             'reference' => (string) ($data['reference'] ?? 'REF-'.Str::random(10)),
-            'title' => (string) ($data['title'] ?? 'Pagamento'),
-            'description' => $data['description'] ?? null,
+            'title' => $title,
+            'description' => $description,
             'amountMzn' => (int) round($amount),
             'method' => $method,
             'payerPhone' => $phone,
         ];
 
+        $path = '/payments';
         $idempotencyKey = $data['idempotencyKey'] ?? 'pay:'.$body['reference'];
         [$headers, $rawBody] = $this->generateSignatureHeaders($path, $body, $idempotencyKey);
         [$url] = $this->resolveUrl($path);
@@ -198,11 +201,11 @@ class PagarClient
             $json = $response->json() ?? [];
 
             if ($response->status() === 202 || $response->successful()) {
-                $payment = $json['payment'] ?? [];
+                $payment = $json['payment'] ?? (isset($json['id']) || isset($json['paymentId']) ? $json : []);
 
                 return [
                     'success' => true,
-                    'paymentId' => $payment['id'] ?? null,
+                    'paymentId' => $payment['id'] ?? $payment['paymentId'] ?? null,
                     'status' => $payment['status'] ?? PaymentStatus::Processing->value,
                     'reference' => $payment['reference'] ?? $body['reference'],
                     'message' => 'Pedido de pagamento enviado com sucesso. Aguardando confirmação no telemóvel.',
@@ -210,10 +213,21 @@ class PagarClient
                 ];
             }
 
+            $message = $json['message'] ?? 'Falha ao processar pagamento na Pagar API.';
+            if (! empty($json['details']['fieldErrors'])) {
+                $fieldErrors = [];
+                foreach ($json['details']['fieldErrors'] as $field => $errors) {
+                    $fieldErrors[] = implode(', ', (array) $errors);
+                }
+                if (! empty($fieldErrors)) {
+                    $message = implode(' | ', $fieldErrors);
+                }
+            }
+
             return [
                 'success' => false,
                 'status' => PaymentStatus::Failed->value,
-                'message' => $json['message'] ?? 'Falha ao processar pagamento na Pagar API.',
+                'message' => $message,
                 'raw' => $json,
             ];
         } catch (\Throwable $e) {
