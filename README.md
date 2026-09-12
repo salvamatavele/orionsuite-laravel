@@ -49,8 +49,17 @@ PAGAR_MAX_AMOUNT=40000
 # Notifica.co.mz (Comunicação Multicanal)
 # -------------------------------------------------------------
 NOTIFICA_ENABLED=true
-NOTIFICA_API_BASE_URL="https://api.notifica.co.mz/api/v1"
-NOTIFICA_API_TOKEN="seu_token_notifica"
+NOTIFICA_BASE_URL="https://api.notifica.co.mz/api/v1"
+
+# Service Tokens Dedicados por Serviço (Recomendado pela Notifica):
+NOTIFICA_SMS_TOKEN="seu_token_permanente_de_sms"            # Em Serviços → SMS → Tokens
+NOTIFICA_WHATSAPP_TOKEN="seu_token_permanente_de_whatsapp" # Em Serviços → WhatsApp → Tokens
+NOTIFICA_EMAIL_TOKEN="seu_token_permanente_de_email"       # Em Serviços → Email → Tokens
+NOTIFICA_PUSH_TOKEN="seu_token_permanente_de_push"         # Em Serviços → Push → Tokens
+
+# Token Global / Sessão (Usado para /senders ou como fallback automático):
+NOTIFICA_API_TOKEN="seu_token_geral_ou_jwt"
+
 NOTIFICA_DEFAULT_SMS_SENDER="ORIONCODE"
 NOTIFICA_DEFAULT_WHATSAPP_INSTANCE_UUID="uuid-da-instancia-whatsapp"
 NOTIFICA_DEFAULT_EMAIL_FROM="notificacoes@suaempresa.co.mz"
@@ -178,6 +187,13 @@ Notifica::sendEmail(
     body: 'Sua matrícula foi realizada com sucesso.',
     from: 'admissoes@universidade.ac.mz' // opcional
 );
+
+// 6. Resolução Automática de Token por Serviço:
+// O NotificaClient resolve automaticamente o Service Token correto:
+// Notifica::sendSms() usa NOTIFICA_SMS_TOKEN (ou NOTIFICA_API_TOKEN)
+// Notifica::sendWhatsAppText() usa NOTIFICA_WHATSAPP_TOKEN (ou NOTIFICA_API_TOKEN)
+// Notifica::sendEmail() usa NOTIFICA_EMAIL_TOKEN (ou NOTIFICA_API_TOKEN)
+// Notifica::sendPush() usa NOTIFICA_PUSH_TOKEN (ou NOTIFICA_API_TOKEN)
 ```
 
 ---
