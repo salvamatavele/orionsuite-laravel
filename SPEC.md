@@ -103,14 +103,24 @@ Headers enviados:
 
 ## 4. Especificação do Módulo Notifica.co.mz
 
-### 4.1 Métodos Disponíveis
+### 4.1 Autenticação por Service Token e JWT
+A API Notifica.co.mz suporta tokens dedicados permanentes por serviço (gerados em *Serviços → [Serviço] → Tokens*):
+- `sms_token` (`NOTIFICA_SMS_TOKEN`): Token dedicado para envio de SMS.
+- `whatsapp_token` (`NOTIFICA_WHATSAPP_TOKEN`): Token dedicado para instâncias de WhatsApp.
+- `email_token` (`NOTIFICA_EMAIL_TOKEN`): Token dedicado para envio de E-mails.
+- `push_token` (`NOTIFICA_PUSH_TOKEN`): Token dedicado para Push Notifications.
+- `api_token` (`NOTIFICA_API_TOKEN`): Token global/sessão (JWT) com fallback automático caso um token de serviço não seja especificado.
+
+O método `getTokenFor(string $service)` resolve automaticamente o token mais específico, garantindo que as chamadas a cada canal usem o Service Token correto com permissão ativa.
+
+### 4.2 Métodos Disponíveis
 - **SMS Corporativo**: `sendSms(string $to, string $message, ?string $sender = null)`
 - **WhatsApp**:
   - Texto: `sendWhatsAppText(string $to, string $message, ?string $instanceUuid = null)`
-  - Mídia/Documentos: `sendWhatsAppMedia(string $to, string $mediaUrl, string $type, ?string $caption = null)`
-  - Templates: `sendWhatsAppTemplate(string $to, string $templateName, array $params = [], string $lang = 'pt')`
-- **Push Notifications**: `sendPush(string $title, string $body, ?string $deviceToken = null, ?string $userId = null, array $data = [])`
-- **E-mail**: `sendEmail(string $to, string $subject, string $htmlBody, ?string $from = null)`
+  - Mídia/Documentos: `sendWhatsAppMedia(string $to, string $mediaUrl, string $type, ?string $caption = null, ?string $instanceUuid = null)`
+  - Templates: `sendWhatsAppTemplate(string $to, string $templateName, array $params = [], string $lang = 'pt', ?string $instanceUuid = null)`
+- **Push Notifications**: `sendPush(string $title, string $body, ?string $deviceToken = null, ?string $userId = null, ?string $imageUrl = null, ?array $data = null, string $priority = 'normal')`
+- **E-mail**: `sendEmail(string $to, string $subject, string $body, ?string $from = null, string $type = 'transactional')`
 - **Descoberta de Remetentes**: `listSenders()` e `listEmailSenders()`
 
 ---

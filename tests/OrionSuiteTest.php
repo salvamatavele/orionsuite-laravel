@@ -115,17 +115,38 @@ class OrionSuiteTest extends TestCase
             ], 200),
         ]);
 
-        $notifica = new NotificaClient('token');
+        $notifica = new NotificaClient(
+            apiToken: 'general_token',
+            smsToken: 'sms_service_token'
+        );
         $res = $notifica->sendSms('841234567', 'Olá Moçambique!');
 
         $this->assertTrue($res['success']);
         $this->assertEquals('msg_abc', $res['message_id']);
+
+        // Verificar se usou o Bearer token específico de SMS
+        Http::assertSent(function ($request) {
+            return $request->hasHeader('Authorization', 'Bearer sms_service_token');
+        });
 
         // Testar desativação
         $notifica->disable();
         $resDisabled = $notifica->sendSms('841234567', 'Outra mensagem');
         $this->assertFalse($resDisabled['success']);
         $this->assertTrue($resDisabled['disabled']);
+    }
+
+    public function test_notifica_token_fallback(): void
+    {
+        $notifica = new NotificaClient(
+            apiToken: 'fallback_token',
+            whatsappToken: 'custom_wa_token'
+        );
+
+        $this->assertEquals('fallback_token', $notifica->getTokenFor('sms'));
+        $this->assertEquals('custom_wa_token', $notifica->getTokenFor('whatsapp'));
+        $this->assertEquals('fallback_token', $notifica->getTokenFor('email'));
+        $this->assertEquals('fallback_token', $notifica->getTokenFor('push'));
     }
 
     public function test_orion_suite_manager_disable_all(): void

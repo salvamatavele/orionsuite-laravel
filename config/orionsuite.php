@@ -33,7 +33,11 @@ return [
     'notifica' => [
         'enabled' => (bool) env('NOTIFICA_ENABLED', true),
         'base_url' => env('NOTIFICA_API_BASE_URL', 'https://api.notifica.co.mz/api/v1'),
-        'api_token' => env('NOTIFICA_API_TOKEN'),
+        'api_token' => env('NOTIFICA_API_TOKEN'), // Token global / JWT de sessão
+        'sms_token' => env('NOTIFICA_SMS_TOKEN'), // Service Token permanente para SMS
+        'whatsapp_token' => env('NOTIFICA_WHATSAPP_TOKEN'), // Service Token permanente para WhatsApp
+        'email_token' => env('NOTIFICA_EMAIL_TOKEN'), // Service Token permanente para Email
+        'push_token' => env('NOTIFICA_PUSH_TOKEN'), // Service Token permanente para Push
         'default_sms_sender' => env('NOTIFICA_DEFAULT_SMS_SENDER', 'ORIONCODE'),
         'default_whatsapp_instance_uuid' => env('NOTIFICA_DEFAULT_WHATSAPP_INSTANCE_UUID'),
         'default_email_from' => env('NOTIFICA_DEFAULT_EMAIL_FROM', 'noreply@notifica.co.mz'),

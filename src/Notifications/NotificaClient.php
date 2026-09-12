@@ -11,6 +11,10 @@ class NotificaClient
     public function __construct(
         protected string $apiToken,
         protected string $baseUrl = 'https://api.notifica.co.mz/api/v1',
+        protected ?string $smsToken = null,
+        protected ?string $whatsappToken = null,
+        protected ?string $emailToken = null,
+        protected ?string $pushToken = null,
         protected string $defaultSender = 'ORIONCODE',
         protected ?string $defaultWhatsAppInstanceUuid = null,
         protected ?string $defaultEmailFrom = 'noreply@notifica.co.mz',
@@ -23,12 +27,58 @@ class NotificaClient
         return new self(
             apiToken: (string) ($config['api_token'] ?? ''),
             baseUrl: (string) ($config['base_url'] ?? 'https://api.notifica.co.mz/api/v1'),
+            smsToken: ! empty($config['sms_token']) ? (string) $config['sms_token'] : null,
+            whatsappToken: ! empty($config['whatsapp_token']) ? (string) $config['whatsapp_token'] : null,
+            emailToken: ! empty($config['email_token']) ? (string) $config['email_token'] : null,
+            pushToken: ! empty($config['push_token']) ? (string) $config['push_token'] : null,
             defaultSender: (string) ($config['default_sms_sender'] ?? 'ORIONCODE'),
             defaultWhatsAppInstanceUuid: $config['default_whatsapp_instance_uuid'] ?? null,
             defaultEmailFrom: $config['default_email_from'] ?? 'noreply@notifica.co.mz',
             enabled: (bool) ($config['enabled'] ?? true),
             disabledMessage: (string) ($config['disabled_message'] ?? 'O serviço de notificações encontra-se temporariamente indisponível.'),
         );
+    }
+
+    /**
+     * Obtém o token apropriado para o serviço (SMS, WhatsApp, Email, Push) com fallback para apiToken
+     */
+    public function getTokenFor(string $service = 'general'): string
+    {
+        return match (strtolower($service)) {
+            'sms' => $this->smsToken ?: $this->apiToken,
+            'whatsapp' => $this->whatsappToken ?: $this->apiToken,
+            'email' => $this->emailToken ?: $this->apiToken,
+            'push' => $this->pushToken ?: $this->apiToken,
+            default => $this->apiToken,
+        };
+    }
+
+    public function setSmsToken(?string $token): self
+    {
+        $this->smsToken = $token;
+
+        return $this;
+    }
+
+    public function setWhatsAppToken(?string $token): self
+    {
+        $this->whatsappToken = $token;
+
+        return $this;
+    }
+
+    public function setEmailToken(?string $token): self
+    {
+        $this->emailToken = $token;
+
+        return $this;
+    }
+
+    public function setPushToken(?string $token): self
+    {
+        $this->pushToken = $token;
+
+        return $this;
     }
 
     public function isEnabled(): bool
@@ -98,13 +148,16 @@ class NotificaClient
             return ['success' => false, 'message' => $this->disabledMessage, 'disabled' => true];
         }
 
+        $token = $this->getTokenFor('general');
+
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.$this->apiToken,
+            'Authorization' => 'Bearer '.$token,
+            'Accept' => 'application/json',
         ])
             ->timeout(15)
             ->get($this->baseUrl.'/senders');
 
-        return $response->json() ?? [];
+        return $this->formatResponse($response);
     }
 
     /**
@@ -116,13 +169,16 @@ class NotificaClient
             return ['success' => false, 'message' => $this->disabledMessage, 'disabled' => true];
         }
 
+        $token = $this->getTokenFor('email');
+
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.$this->apiToken,
+            'Authorization' => 'Bearer '.$token,
+            'Accept' => 'application/json',
         ])
             ->timeout(15)
             ->get($this->baseUrl.'/email/senders');
 
-        return $response->json() ?? [];
+        return $this->formatResponse($response);
     }
 
     /**
@@ -137,10 +193,12 @@ class NotificaClient
         }
 
         $phone = PhoneNormalizer::normalizeInternational($to);
+        $token = $this->getTokenFor('sms');
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.$this->apiToken,
+            'Authorization' => 'Bearer '.$token,
             'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
         ])
             ->timeout(20)
             ->post($this->baseUrl.'/sms/send', [
@@ -149,7 +207,7 @@ class NotificaClient
                 'source_addr' => $sender ?: $this->defaultSender,
             ]);
 
-        return $response->json() ?? [];
+        return $this->formatResponse($response);
     }
 
     /**
@@ -163,6 +221,7 @@ class NotificaClient
 
         $phone = PhoneNormalizer::normalizeInternational($to);
         $uuid = $instanceUuid ?: $this->defaultWhatsAppInstanceUuid;
+        $token = $this->getTokenFor('whatsapp');
 
         $body = [
             'to' => $phone,
@@ -174,13 +233,14 @@ class NotificaClient
         }
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.$this->apiToken,
+            'Authorization' => 'Bearer '.$token,
             'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
         ])
             ->timeout(25)
             ->post($this->baseUrl.'/whatsapp/send-text', $body);
 
-        return $response->json() ?? [];
+        return $this->formatResponse($response);
     }
 
     /**
@@ -202,6 +262,7 @@ class NotificaClient
 
         $phone = PhoneNormalizer::normalizeInternational($to);
         $uuid = $instanceUuid ?: $this->defaultWhatsAppInstanceUuid;
+        $token = $this->getTokenFor('whatsapp');
 
         $body = [
             'to' => $phone,
@@ -218,13 +279,14 @@ class NotificaClient
         }
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.$this->apiToken,
+            'Authorization' => 'Bearer '.$token,
             'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
         ])
             ->timeout(30)
             ->post($this->baseUrl.'/whatsapp/send-media', $body);
 
-        return $response->json() ?? [];
+        return $this->formatResponse($response);
     }
 
     /**
@@ -238,6 +300,7 @@ class NotificaClient
 
         $phone = PhoneNormalizer::normalizeInternational($to);
         $uuid = $instanceUuid ?: $this->defaultWhatsAppInstanceUuid;
+        $token = $this->getTokenFor('whatsapp');
 
         $body = [
             'to' => $phone,
@@ -251,18 +314,18 @@ class NotificaClient
         }
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.$this->apiToken,
+            'Authorization' => 'Bearer '.$token,
             'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
         ])
             ->timeout(25)
             ->post($this->baseUrl.'/whatsapp/send-template', $body);
 
-        return $response->json() ?? [];
+        return $this->formatResponse($response);
     }
 
     /**
      * Envio de Push Notification (Web e Mobile)
-     * Conforme documentação oficial preliminar da API Notifica (POST /api/v1/push/send)
      */
     public function sendPush(
         string $title,
@@ -283,6 +346,8 @@ class NotificaClient
                 'message' => 'É obrigatório fornecer o "device_token" ou o "user_id" para envio de push notification.',
             ];
         }
+
+        $token = $this->getTokenFor('push');
 
         $payload = [
             'title' => $title,
@@ -307,13 +372,14 @@ class NotificaClient
         }
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.$this->apiToken,
+            'Authorization' => 'Bearer '.$token,
             'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
         ])
             ->timeout(20)
             ->post($this->baseUrl.'/push/send', $payload);
 
-        return $response->json() ?? [];
+        return $this->formatResponse($response);
     }
 
     /**
@@ -326,6 +392,7 @@ class NotificaClient
         }
 
         $sender = $from ?: $this->defaultEmailFrom;
+        $token = $this->getTokenFor('email');
 
         $payload = [
             'to' => $to,
@@ -339,12 +406,50 @@ class NotificaClient
         }
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.$this->apiToken,
+            'Authorization' => 'Bearer '.$token,
             'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
         ])
             ->timeout(25)
             ->post($this->baseUrl.'/email/send', $payload);
 
-        return $response->json() ?? [];
+        return $this->formatResponse($response);
+    }
+
+    /**
+     * Formata e padroniza a resposta HTTP retornada pela API Notifica
+     */
+    protected function formatResponse(\Illuminate\Http\Client\Response $response): array
+    {
+        $json = $response->json();
+
+        if (is_array($json)) {
+            // Se a API retornou erro no payload ou status >= 400
+            if (! $response->successful() && ! isset($json['success'])) {
+                $json['success'] = false;
+            }
+
+            if (! isset($json['message'])) {
+                if (isset($json['error'])) {
+                    $json['message'] = is_array($json['error']) ? ($json['error']['message'] ?? json_encode($json['error'])) : (string) $json['error'];
+                }
+            }
+
+            return $json;
+        }
+
+        if (! $response->successful()) {
+            return [
+                'success' => false,
+                'status' => $response->status(),
+                'message' => $response->body() ?: 'Erro de comunicação com a API Notifica (Status '.$response->status().')',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'status' => $response->status(),
+            'raw' => $response->body(),
+        ];
     }
 }
